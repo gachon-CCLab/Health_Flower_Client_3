@@ -1,6 +1,5 @@
 # https://github.com/adap/flower/tree/main/examples/advanced_tensorflow 참조
 
-import argparse
 import os
 
 import tensorflow as tf
@@ -37,7 +36,7 @@ import json
 
 # Make TensorFlow logs less verbose
 # TF warning log 필터링
-# os.environ["TF_CPP_MIN_LOG_LEVEL"] = "3"
+os.environ["TF_CPP_MIN_LOG_LEVEL"] = "3"
 
 global client_num
 client_num = 3 # client 번호
@@ -46,11 +45,11 @@ client_num = 3 # client 번호
 app = FastAPI()
 
 class FLclient_status(BaseModel):
-    # FL_client: int = client_num
+    FL_client: int = client_num
     FL_client_online: bool = True
     FL_client_start: bool = False
     FL_client_fail: bool = False
-    # FL_server_IP: str = None 
+    FL_server_IP: str = None 
 
 status = FLclient_status()
 
@@ -87,7 +86,7 @@ class PatientClient(fl.client.NumPyClient):
             self.y_train,
             batch_size,
             epochs,
-            validation_split=0.1,
+            validation_split=0.2,
         )
 
         # Return updated model parameters and results
@@ -134,9 +133,6 @@ class PatientClient(fl.client.NumPyClient):
 @app.on_event("startup")
 def startup():
     pass
-    # loop = asyncio.get_event_loop()
-    # loop.set_debug(True)
-    # loop.create_task(run_client())
 
 @app.get('/online')
 def get_info():
@@ -144,18 +140,12 @@ def get_info():
 
 @app.get("/start/{Server_IP}")
 def main() -> None:
-    # # Parse command line argument `partition`
-    # parser = argparse.ArgumentParser(description="Flower")
-    # parser.add_argument("--partition", type=int, choices=range(0, 10), required=True)
-    # args = parser.parse_args()
 
     global client_num, status
 
-    # client_num=0
-
     # data load
     # 환자별로 partition 분리 => 개별 클라이언트 적용
-    (x_train, y_train), (x_test, y_test), label_count = load_partition(client_num)
+    (x_train, y_train), (x_test, y_test), label_count = load_partition()
 
     # Load and compile Keras model
     # 모델 및 메트릭 정의
@@ -216,11 +206,9 @@ async def notify_fail():
     else:
         print(r.content)
 
-def load_partition(idx: int):
+def load_partition():
     # Load the dataset partitions
     data, p_list = dataset.data_load()
-    # p_df = data[data.patient_id==p_list[idx]]
-
 
     # label 까지 포함 dataframe
     train_df, test_df = train_test_split(data.iloc[:,1:], test_size=0.2)
@@ -258,39 +246,37 @@ if __name__ == "__main__":
     today_time = today.strftime('%Y-%m-%d %H-%M-%S')
 
     # # client_manager 주소
-    # cl_manager: str = 'http://0.0.0.0:8003/'
-    # cl_res = requests.get(cl_manager+'info')
+    cl_manager: str = 'http://0.0.0.0:8003/'
+    cl_res = requests.get(cl_manager+'info')
 
     # # 최신 global model 버전
-    # latest_gl_model_v = int(cl_res.json()['GL_Model_V'])
+    latest_gl_model_v = int(cl_res.json()['GL_Model_V'])
     
     # # 다음 global model 버전
-    # next_gl_model = latest_gl_model_v + 1
+    next_gl_model = latest_gl_model_v + 1
 
 
     # wandb login and init
     wandb.login(key=os.environ.getenv('WB_KEY'))
-    # wandb.init(entity='ccl-fl', project='health_flower', name='health_acc_loss v2')
-    wandb.init(entity='ccl-fl', project='client_flower', name= 'client %s_V0'%client_num, dir='/Users/yangsemo/VScode/Flower_Health/wandb_client')
-    # wandb.init(entity='ccl-fl', project='client_flower', name= 'client_V%s'%next_gl_model, dir='/Users/yangsemo/VScode/Flower_Health/wandb_client')
+    wandb.init(entity='ccl-fl', project='client_flower', name= 'client %s_V%s'%(client_num,next_gl_model), dir='/app')
 
     try:
         # client api 생성 => client manager와 통신하기 위함
-        # uvicorn.run("app:app", host='0.0.0.0', port=8002, reload=True)
+        uvicorn.run("app:app", host='0.0.0.0', port=8002, reload=True)
 
         # client FL 수행
         main()
         # client FL 종료
-        # notify_fin()
-        # status.FL_client_fail=False
+        notify_fin()
+        status.FL_client_fail=False
     # except Exception as e:
         # client error
-        # status.FL_client_fail=True
-        # notify_fail()
+        status.FL_client_fail=True
+        notify_fail()
     finally:
         # wandb 종료
         wandb.finish()
 
         # FL client out
-        # requests.get('http://localhost:8003/flclient_out')
+        requests.get('http://localhost:8003/flclient_out')
         print('%s client close'%client_num)
