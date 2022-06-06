@@ -135,9 +135,12 @@ def get_info():
     return status
 
 @app.get("/start/{Server_IP}")
-def main() -> None:
+async def main(Server_IP : str) -> None:
 
     global client_num, status
+    
+    status.FL_server_IP = Server_IP
+    print("server_ip: ", status.FL_server_IP)
 
     # data load
     # 환자별로 partition 분리 => 개별 클라이언트 적용
