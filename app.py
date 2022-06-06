@@ -3,7 +3,6 @@
 import os
 
 import tensorflow as tf
-import tensorflow_addons as tfa
 
 import flwr as fl
 
@@ -24,14 +23,11 @@ import wandb
 from datetime import datetime
 
 from urllib.request import urlopen
-from urllib.error import URLError, HTTPError
 import requests
-from fastapi import FastAPI, BackgroundTasks
+from fastapi import FastAPI
 import asyncio
 import uvicorn
 from pydantic.main import BaseModel
-import logging
-import json
 
 
 # Make TensorFlow logs less verbose
@@ -257,7 +253,7 @@ if __name__ == "__main__":
 
 
     # wandb login and init
-    wandb.login(key=os.environ.getenv('WB_KEY'))
+    wandb.login(key=os.environ.get('WB_KEY'))
     wandb.init(entity='ccl-fl', project='client_flower', name= 'client %s_V%s'%(client_num,next_gl_model), dir='/app')
 
     try:
