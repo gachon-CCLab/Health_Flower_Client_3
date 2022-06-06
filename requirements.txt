@@ -1,5 +1,5 @@
 pandas
-flwr==0.17.0
+flwr
 urllib3
 boto3
 requests
@@ -9,8 +9,7 @@ pydantic
 tensorflow
 botocore
 keras
-keras==2.6.0
-wandb==0.12.11
+wandb
 numpy
 sklearn
 pyarrow
