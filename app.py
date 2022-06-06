@@ -173,7 +173,7 @@ async def main(Server_IP : str) -> None:
 
     # Start Flower client
     client = PatientClient(model, x_train, y_train, x_test, y_test)
-    fl.client.start_numpy_client("[::]:8080", client=client)
+    fl.client.start_numpy_client(status.FL_server_IP, client=client)
     
     print('FL server start')
     status.FL_client_start = True
