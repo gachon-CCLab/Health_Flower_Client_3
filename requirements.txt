@@ -13,3 +13,4 @@ keras==2.6.0
 wandb==0.12.11
 numpy
 sklearn
+pyarrow
