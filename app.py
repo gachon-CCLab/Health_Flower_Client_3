@@ -253,7 +253,7 @@ if __name__ == "__main__":
 
 
     # wandb login and init
-    wandb.login(key=os.environ.get('WB_KEY'))
+    wandb.login(key='6266dbc809b57000d78fb8b163179a0a3d6eeb37')
     wandb.init(entity='ccl-fl', project='client_flower', name= 'client %s_V%s'%(client_num,next_gl_model), dir='/app')
 
     try:
