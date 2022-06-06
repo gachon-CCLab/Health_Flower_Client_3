@@ -11,7 +11,7 @@ import operator
 
 def data_load():
     # 파일 경로
-    file_path='/app/dataset/hostpital_3.csv'
+    file_path='/app/dataset/hospital_3.csv'
     
     df = csv.read_csv(file_path).to_pandas()
 
