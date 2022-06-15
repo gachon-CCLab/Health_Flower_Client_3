@@ -138,47 +138,54 @@ def get_info():
 @app.get("/start/{Server_IP}")
 async def main(Server_IP : str) -> None:
 
-    global client_num, status
+    try:
+        global client_num, status
+        
+        status.FL_server_IP = Server_IP
+        print("server_ip: ", status.FL_server_IP)
+
+        # data load
+        # 환자별로 partition 분리 => 개별 클라이언트 적용
+        (x_train, y_train), (x_test, y_test), label_count = load_partition()
+
+        # Load and compile Keras model
+        # 모델 및 메트릭 정의
+        METRICS = [
+            tf.keras.metrics.BinaryAccuracy(name='accuracy'),
+            tf.keras.metrics.Precision(name='precision'),
+            tf.keras.metrics.Recall(name='recall'),
+            tf.keras.metrics.AUC(name='auc'),
+            # tfa.metrics.F1Score(name='f1_score', num_classes=5),
+            tf.keras.metrics.AUC(name='auprc', curve='PR'), # precision-recall curve
+        ]
+
+        model = tf.keras.Sequential([
+            tf.keras.layers.Dense(
+                16, activation='relu',
+                input_shape=(x_train.shape[-1],)),
+            tf.keras.layers.Dropout(0.5),
+            tf.keras.layers.Dense(5, activation='sigmoid'),
+        ])
+
+        model.compile(
+            optimizer=tf.keras.optimizers.Adam(learning_rate=1e-3),
+            loss=tf.keras.losses.BinaryCrossentropy(),
+            metrics=METRICS)
+
+
+        # Start Flower client
+        client = PatientClient(model, x_train, y_train, x_test, y_test)
+        fl.client.start_numpy_client(status.FL_server_IP, client=client)
+        
+        print('FL server start')
+        status.FL_client_start = True
+        status.FL_client_fail=False
     
-    status.FL_server_IP = Server_IP
-    print("server_ip: ", status.FL_server_IP)
+    except Exception as e:
 
-    # data load
-    # 환자별로 partition 분리 => 개별 클라이언트 적용
-    (x_train, y_train), (x_test, y_test), label_count = load_partition()
-
-    # Load and compile Keras model
-    # 모델 및 메트릭 정의
-    METRICS = [
-        tf.keras.metrics.BinaryAccuracy(name='accuracy'),
-        tf.keras.metrics.Precision(name='precision'),
-        tf.keras.metrics.Recall(name='recall'),
-        tf.keras.metrics.AUC(name='auc'),
-        # tfa.metrics.F1Score(name='f1_score', num_classes=5),
-        tf.keras.metrics.AUC(name='auprc', curve='PR'), # precision-recall curve
-    ]
-
-    model = tf.keras.Sequential([
-        tf.keras.layers.Dense(
-            16, activation='relu',
-            input_shape=(x_train.shape[-1],)),
-        tf.keras.layers.Dropout(0.5),
-        tf.keras.layers.Dense(5, activation='sigmoid'),
-    ])
-
-    model.compile(
-        optimizer=tf.keras.optimizers.Adam(learning_rate=1e-3),
-        loss=tf.keras.losses.BinaryCrossentropy(),
-        metrics=METRICS)
-
-
-    # Start Flower client
-    client = PatientClient(model, x_train, y_train, x_test, y_test)
-    fl.client.start_numpy_client(status.FL_server_IP, client=client)
-    
-    print('FL server start')
-    status.FL_client_start = True
-
+        # client error
+        status.FL_client_fail=True
+        await notify_fail()    
 
 # client manager에서 train finish 정보 확인
 async def notify_fin():
@@ -265,15 +272,13 @@ if __name__ == "__main__":
         uvicorn.run("app:app", host='0.0.0.0', port=8002, reload=True)
 
         # client FL 수행
-        main()
+        # main()
+        
+    finally:
+
         # client FL 종료
         notify_fin()
-        status.FL_client_fail=False
-    # except Exception as e:
-        # client error
-        status.FL_client_fail=True
-        notify_fail()
-    finally:
+
         # wandb 종료
         wandb.finish()
 
