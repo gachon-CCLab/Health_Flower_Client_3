@@ -183,6 +183,8 @@ async def main(Server_IP : str) -> None:
         # client FL 종료
         notify_fin()
         status.FL_client_fail=False
+        
+        return status
     
     except Exception as e:
 
