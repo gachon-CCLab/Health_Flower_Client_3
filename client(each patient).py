@@ -113,10 +113,20 @@ class PatientClient(fl.client.NumPyClient):
         auc = history.history["auc"][0]
         # f1_score = history.history["f1_score"][0]
 
+        val_loss = history.history["val_loss"][0]
+        val_accuracy = history.history["val_accuracy"][0]
+        val_precision = history.history["val_precision"][0]
+        val_recall = history.history["val_recall"][0]
+        val_auc = history.history["val_auc"][0]
+
         # print(history.history)
 
         # local model 성능지표 wandb에 upload
         wandb.log({"loss": loss, "accuracy": accuracy, "precision": precision, "recall": recall, "auc":auc})
+
+        # local model의 validation set 성능지표 wandb에 upload
+        wandb.log({"val_loss": val_loss, "val_accuracy": val_accuracy, "val_precision": val_precision, "val_recall": val_recall, "val_auc":val_auc})
+
 
         return parameters_prime, num_examples_train, results
 

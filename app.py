@@ -138,6 +138,9 @@ def get_info():
 @app.get("/start/{Server_IP}")
 async def main(Server_IP : str) -> None:
 
+    print('FL server start')
+    status.FL_client_start = True
+
     try:
         global client_num, status
         
@@ -172,9 +175,6 @@ async def main(Server_IP : str) -> None:
             loss=tf.keras.losses.BinaryCrossentropy(),
             metrics=METRICS)
 
-        print('FL server start')
-        status.FL_client_start = True
-
         # Start Flower client
         client = PatientClient(model, x_train, y_train, x_test, y_test)
         fl.client.start_numpy_client(status.FL_server_IP, client=client)
@@ -190,12 +190,12 @@ async def main(Server_IP : str) -> None:
         await notify_fail()    
 
 # client manager에서 train finish 정보 확인
-async def notify_fin():
+def notify_fin():
     global status
     status.FL_client_start = False
     loop = asyncio.get_event_loop()
     future2 = loop.run_in_executor(None, requests.get, 'http://localhost:8003/trainFin')
-    r = await future2
+    r = future2
     print('try notify_fin')
     if r.status_code == 200:
         print('trainFin')
