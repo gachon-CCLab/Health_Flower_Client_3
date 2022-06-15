@@ -176,10 +176,12 @@ async def main(Server_IP : str) -> None:
             loss=tf.keras.losses.BinaryCrossentropy(),
             metrics=METRICS)
 
+        print('starting flower client')
         # Start Flower client
         client = PatientClient(model, x_train, y_train, x_test, y_test)
         fl.client.start_numpy_client(status.FL_server_IP, client=client)
-
+        print('client FL finished')
+        
         # client FL 종료
         notify_fin()
         status.FL_client_fail=False
