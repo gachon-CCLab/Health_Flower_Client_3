@@ -75,7 +75,7 @@ class PatientClient(fl.client.NumPyClient):
         num_rounds: int = config["num_rounds"]
 
         # wandb에 파라미터값 upload
-        wandb.config.update({"num_rounds": num_rounds, "epochs": epochs,"batch_size": batch_size, "client_num": client_num})
+        # wandb.config.update({"num_rounds": num_rounds, "epochs": epochs,"batch_size": batch_size, "client_num": client_num})
 
         # Train the model using hyperparameters from config
         history = self.model.fit(
@@ -107,7 +107,7 @@ class PatientClient(fl.client.NumPyClient):
         # print(history.history)
 
         # local model 성능지표 wandb에 upload
-        wandb.log({"loss": loss, "accuracy": accuracy, "precision": precision, "recall": recall, "auc":auc})
+        # wandb.log({"loss": loss, "accuracy": accuracy, "precision": precision, "recall": recall, "auc":auc})
 
         return parameters_prime, num_examples_train, results
 
@@ -172,13 +172,15 @@ async def main(Server_IP : str) -> None:
             loss=tf.keras.losses.BinaryCrossentropy(),
             metrics=METRICS)
 
+        print('FL server start')
+        status.FL_client_start = True
 
         # Start Flower client
         client = PatientClient(model, x_train, y_train, x_test, y_test)
         fl.client.start_numpy_client(status.FL_server_IP, client=client)
-        
-        print('FL server start')
-        status.FL_client_start = True
+
+        # client FL 종료
+        notify_fin()
         status.FL_client_fail=False
     
     except Exception as e:
@@ -264,8 +266,8 @@ if __name__ == "__main__":
 
 
     # wandb login and init
-    wandb.login(key='6266dbc809b57000d78fb8b163179a0a3d6eeb37')
-    wandb.init(entity='ccl-fl', project='client_flower', name= 'client %s_V%s'%(client_num,next_gl_model), dir='/app')
+    # wandb.login(key='6266dbc809b57000d78fb8b163179a0a3d6eeb37')
+    # wandb.init(entity='ccl-fl', project='client_flower', name= 'client %s_V%s'%(client_num,next_gl_model), dir='/app')
 
     try:
         # client api 생성 => client manager와 통신하기 위함
@@ -276,11 +278,8 @@ if __name__ == "__main__":
         
     finally:
 
-        # client FL 종료
-        notify_fin()
-
         # wandb 종료
-        wandb.finish()
+        # wandb.finish()
 
         # FL client out
         requests.get('http://localhost:8003/flclient_out')
