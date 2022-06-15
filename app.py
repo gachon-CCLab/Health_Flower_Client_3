@@ -137,12 +137,13 @@ def get_info():
 
 @app.get("/start/{Server_IP}")
 async def main(Server_IP : str) -> None:
+    global client_num, status
 
     print('FL server start')
     status.FL_client_start = True
 
     try:
-        global client_num, status
+        
         
         status.FL_server_IP = Server_IP
         print("server_ip: ", status.FL_server_IP)
