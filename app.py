@@ -167,8 +167,9 @@ async def flclientstart(background_tasks: BackgroundTasks, Server_IP: str):
     global status
     global model
     model = build_model()
+    print('bulid model')
 
-    print('start')
+    print('FL start')
     status.FL_client_start = True
     status.FL_server_IP = Server_IP
     background_tasks.add_task(run_client)
@@ -187,8 +188,10 @@ async def run_client():
         status.FL_client_fail = False
     await flower_client_start()
 
+    return status
+
 async def flower_client_start():
-    print('learning')
+    print('FL learning')
     global status
     global model
 
@@ -201,9 +204,10 @@ async def flower_client_start():
 #        assert type(client).get_properties == fl.client.NumPyClient.get_properties
         print(status.FL_server_IP)
         fl.client.start_numpy_client(server_address=status.FL_server_IP, client=client)
-        #request = partial(fl.client.start_numpy_client, server_address=status.FL_server_IP, client=client)
-        #await loop.run_in_executor(None, request)
+        # request = partial(fl.client.start_numpy_client, server_address=status.FL_server_IP, client=client)
+        # await loop.run_in_executor(None, request)
         
+        print('fl learning finished')
         await model_save()
         del client
     except Exception as e:
@@ -213,6 +217,7 @@ async def flower_client_start():
         await notify_fail()
         status.FL_client_fail = False
         # raise e
+    return status
 
 async def model_save():
     print('model_save')
@@ -237,6 +242,8 @@ async def model_save():
         await notify_fail()
         status.FL_client_fail = False
 
+    return status
+
 # client manager에서 train finish 정보 확인
 async def notify_fin():
     global status
@@ -248,7 +255,9 @@ async def notify_fin():
     if r.status_code == 200:
         print('trainFin')
     else:
-        print(r.content)
+        print('notify_fin error: ', r.content)
+
+    return status
 
 # client manager에서 train fail 정보 확인
 async def notify_fail():
@@ -261,7 +270,9 @@ async def notify_fail():
     if r.status_code == 200:
         print('trainFin')
     else:
-        print(r.content)
+        print('notify_fail error: ', r.content)
+
+    return status
 
 def load_partition():
     # Load the dataset partitions
