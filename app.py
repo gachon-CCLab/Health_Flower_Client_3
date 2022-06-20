@@ -21,10 +21,10 @@ from keras.utils.np_utils import to_categorical
 import wandb
 
 from datetime import datetime
-
+from functools import partial
 from urllib.request import urlopen
 import requests
-from fastapi import FastAPI
+from fastapi import FastAPI, BackgroundTasks
 import asyncio
 import uvicorn
 from pydantic.main import BaseModel
@@ -92,16 +92,16 @@ class PatientClient(fl.client.NumPyClient):
         results = {
             "loss": history.history["loss"][0],
             "accuracy": history.history["accuracy"][0],
-            # "val_loss": history.history["val_loss"][0],
-            # "val_accuracy": history.history["val_accuracy"][0],
+            "val_loss": history.history["val_loss"][0],
+            "val_accuracy": history.history["val_accuracy"][0],
         }
 
         # 매 round 마다 성능지표 확인을 위한 log
-        loss = history.history["loss"][0]
-        accuracy = history.history["accuracy"][0]
-        precision = history.history["precision"][0]
-        recall = history.history["recall"][0]
-        auc = history.history["auc"][0]
+        # loss = history.history["loss"][0]
+        # accuracy = history.history["accuracy"][0]
+        # precision = history.history["precision"][0]
+        # recall = history.history["recall"][0]
+        # auc = history.history["auc"][0]
         # f1_score = history.history["f1_score"][0]
 
         # print(history.history)
@@ -127,6 +127,33 @@ class PatientClient(fl.client.NumPyClient):
         return loss, num_examples_test, {"accuracy": accuracy, "precision": precision, "recall": recall, "auc": auc}
         # return loss, num_examples_test, {"accuracy": accuracy, "precision": precision, "recall": recall, "auc": auc, 'f1_score': f1_score, 'auprc': auprc}
 
+def build_model():
+    # Load and compile Keras model
+    # 모델 및 메트릭 정의
+    METRICS = [
+        tf.keras.metrics.BinaryAccuracy(name='accuracy'),
+        tf.keras.metrics.Precision(name='precision'),
+        tf.keras.metrics.Recall(name='recall'),
+        tf.keras.metrics.AUC(name='auc'),
+        # tfa.metrics.F1Score(name='f1_score', num_classes=5),
+        tf.keras.metrics.AUC(name='auprc', curve='PR'), # precision-recall curve
+    ]
+
+    model = tf.keras.Sequential([
+        tf.keras.layers.Dense(
+            16, activation='relu',
+            input_shape=(6,)),
+        tf.keras.layers.Dropout(0.5),
+        tf.keras.layers.Dense(5, activation='sigmoid'),
+    ])
+
+    model.compile(
+        optimizer=tf.keras.optimizers.Adam(learning_rate=1e-3),
+        loss=tf.keras.losses.BinaryCrossentropy(),
+        metrics=METRICS)
+
+    return model
+
 @app.on_event("startup")
 def startup():
     pass
@@ -136,66 +163,84 @@ def get_info():
     return status
 
 @app.get("/start/{Server_IP}")
-async def main(Server_IP : str) -> None:
-    global client_num, status
+async def flclientstart(background_tasks: BackgroundTasks, Server_IP: str):
+    global status
+    global model
+    model = build_model()
+    print('bulid model')
 
-    print('FL server start')
+    print('FL start')
     status.FL_client_start = True
+    status.FL_server_IP = Server_IP
+    background_tasks.add_task(run_client)
+    return status
+
+async def run_client():
+    global model
+    try:
+        # time.sleep(10)
+        # model.load_weights('/model/model.h5')
+        pass
+    except Exception as e:
+        print('[E][PC0001] learning', e)
+        status.FL_client_fail = True
+        await notify_fail()
+        status.FL_client_fail = False
+    await flower_client_start()
+
+async def flower_client_start():
+    print('FL learning')
+    global status
+    global model
+
+    # 환자별로 partition 분리 => 개별 클라이언트 적용
+    (x_train, y_train), (x_test, y_test), label_count = load_partition()
 
     try:
-        
-        
-        status.FL_server_IP = Server_IP
-        print("server_ip: ", status.FL_server_IP)
-
-        # data load
-        # 환자별로 partition 분리 => 개별 클라이언트 적용
-        (x_train, y_train), (x_test, y_test), label_count = load_partition()
-
-        # Load and compile Keras model
-        # 모델 및 메트릭 정의
-        METRICS = [
-            tf.keras.metrics.BinaryAccuracy(name='accuracy'),
-            tf.keras.metrics.Precision(name='precision'),
-            tf.keras.metrics.Recall(name='recall'),
-            tf.keras.metrics.AUC(name='auc'),
-            # tfa.metrics.F1Score(name='f1_score', num_classes=5),
-            tf.keras.metrics.AUC(name='auprc', curve='PR'), # precision-recall curve
-        ]
-
-        model = tf.keras.Sequential([
-            tf.keras.layers.Dense(
-                16, activation='relu',
-                input_shape=(x_train.shape[-1],)),
-            tf.keras.layers.Dropout(0.5),
-            tf.keras.layers.Dense(5, activation='sigmoid'),
-        ])
-
-        model.compile(
-            optimizer=tf.keras.optimizers.Adam(learning_rate=1e-3),
-            loss=tf.keras.losses.BinaryCrossentropy(),
-            metrics=METRICS)
-
-        print('starting flower client')
-        # Start Flower client
+        loop = asyncio.get_event_loop()
         client = PatientClient(model, x_train, y_train, x_test, y_test)
-        fl.client.start_numpy_client(status.FL_server_IP, client=client)
-        print('client FL finished')
+#        assert type(client).get_properties == fl.client.NumPyClient.get_properties
+        print(status.FL_server_IP)
+        #fl.client.start_numpy_client(server_address=status.FL_server_IP, client=client)
+        request = partial(fl.client.start_numpy_client, server_address=status.FL_server_IP, client=client)
+        await loop.run_in_executor(None, request)
         
-        # client FL 종료
-        notify_fin()
-        status.FL_client_fail=False
-        
-        return status
-    
+        print('fl learning finished')
+        await model_save()
+        del client
     except Exception as e:
 
-        # client error
-        status.FL_client_fail=True
-        await notify_fail()    
+        print('[E][PC0002] learning', e)
+        status.FL_client_fail = True
+        await notify_fail()
+        status.FL_client_fail = False
+        # raise e
+
+async def model_save():
+    print('model_save')
+    global model
+    try:
+         # # client_manager 주소
+        cl_manager: str = 'http://0.0.0.0:8003/'
+        cl_res = requests.get(cl_manager+'info')
+
+        # # 최신 global model 버전
+        latest_gl_model_v = int(cl_res.json()['GL_Model_V'])
+        
+        # # 다음 global model 버전
+        next_gl_model = latest_gl_model_v + 1
+
+        model.save('/model/model_V%s.h5'%next_gl_model)
+        await notify_fin()
+        model=None
+    except Exception as e:
+        print('[E][PC0003] learning', e)
+        status.FL_client_fail = True
+        await notify_fail()
+        status.FL_client_fail = False
 
 # client manager에서 train finish 정보 확인
-def notify_fin():
+async def notify_fin():
     global status
     status.FL_client_start = False
     loop = asyncio.get_event_loop()
@@ -255,21 +300,6 @@ def load_partition():
     return (train_df, train_labels), (test_df,test_labels), len(label_list) # 환자의 레이블 개수
 
 if __name__ == "__main__":
-    # 날짜
-    today= datetime.today()
-    today_time = today.strftime('%Y-%m-%d %H-%M-%S')
-
-    # # client_manager 주소
-    cl_manager: str = 'http://0.0.0.0:8003/'
-    cl_res = requests.get(cl_manager+'info')
-
-    # # 최신 global model 버전
-    latest_gl_model_v = int(cl_res.json()['GL_Model_V'])
-    
-    # # 다음 global model 버전
-    next_gl_model = latest_gl_model_v + 1
-
-
     # wandb login and init
     # wandb.login(key='6266dbc809b57000d78fb8b163179a0a3d6eeb37')
     # wandb.init(entity='ccl-fl', project='client_flower', name= 'client %s_V%s'%(client_num,next_gl_model), dir='/app')
