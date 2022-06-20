@@ -201,11 +201,11 @@ async def flower_client_start():
     try:
         loop = asyncio.get_event_loop()
         client = PatientClient(model, x_train, y_train, x_test, y_test)
-#        assert type(client).get_properties == fl.client.NumPyClient.get_properties
+        assert type(client).get_properties == fl.client.NumPyClient.get_properties
         print(status.FL_server_IP)
-        fl.client.start_numpy_client(server_address=status.FL_server_IP, client=client)
-        # request = partial(fl.client.start_numpy_client, server_address=status.FL_server_IP, client=client)
-        # await loop.run_in_executor(None, request)
+        # fl.client.start_numpy_client(server_address=status.FL_server_IP, client=client)
+        request = partial(fl.client.start_numpy_client, server_address=status.FL_server_IP, client=client)
+        await loop.run_in_executor(None, request)
         
         print('fl learning finished')
         await model_save()
