@@ -250,7 +250,7 @@ async def notify_fin():
     status.FL_client_start = False
     loop = asyncio.get_event_loop()
     future2 = loop.run_in_executor(None, requests.get, 'http://localhost:8003/trainFin')
-    r = future2
+    r = await future2
     print('try notify_fin')
     if r.status_code == 200:
         print('trainFin')
