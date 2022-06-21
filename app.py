@@ -167,13 +167,13 @@ async def flclientstart(background_tasks: BackgroundTasks, Server_IP: str):
     global status
     global model
     model = build_model()
-    print('bulid model')
+    print('build model')
 
-    print('FL start')
     status.FL_client_start = True
     status.FL_server_IP = Server_IP
     background_tasks.add_task(run_client)
     return status
+
 
 async def run_client():
     global model
@@ -187,8 +187,7 @@ async def run_client():
         await notify_fail()
         status.FL_client_fail = False
     await flower_client_start()
-
-    return status
+    
 
 async def flower_client_start():
     print('FL learning')
@@ -201,7 +200,7 @@ async def flower_client_start():
     try:
         loop = asyncio.get_event_loop()
         client = PatientClient(model, x_train, y_train, x_test, y_test)
-        assert type(client).get_properties == fl.client.NumPyClient.get_properties
+#         assert type(client).get_properties == fl.client.NumPyClient.get_properties
         print(status.FL_server_IP)
         # fl.client.start_numpy_client(server_address=status.FL_server_IP, client=client)
         request = partial(fl.client.start_numpy_client, server_address=status.FL_server_IP, client=client)
