@@ -1,6 +1,6 @@
 # https://github.com/adap/flower/tree/main/examples/advanced_tensorflow 참조
 
-import os
+import os, time
 
 import tensorflow as tf
 
@@ -167,18 +167,18 @@ async def flclientstart(background_tasks: BackgroundTasks, Server_IP: str):
     global status
     global model
     model = build_model()
-    
-    print('start')
+    print('bulid model')
+
+    print('FL start')
     status.FL_client_start = True
     status.FL_server_IP = Server_IP
     background_tasks.add_task(run_client)
     return status
 
-
 async def run_client():
     global model
     try:
-        # time.sleep(10)
+        time.sleep(10)
         # model.load_weights('/model/model.h5')
         pass
     except Exception as e:
@@ -187,7 +187,8 @@ async def run_client():
         await notify_fail()
         status.FL_client_fail = False
     await flower_client_start()
-    
+
+    return status
 
 async def flower_client_start():
     print('FL learning')
@@ -200,7 +201,7 @@ async def flower_client_start():
     try:
         loop = asyncio.get_event_loop()
         client = PatientClient(model, x_train, y_train, x_test, y_test)
-#         assert type(client).get_properties == fl.client.NumPyClient.get_properties
+        assert type(client).get_properties == fl.client.NumPyClient.get_properties
         print(status.FL_server_IP)
         # fl.client.start_numpy_client(server_address=status.FL_server_IP, client=client)
         request = partial(fl.client.start_numpy_client, server_address=status.FL_server_IP, client=client)
@@ -216,7 +217,7 @@ async def flower_client_start():
         await notify_fail()
         status.FL_client_fail = False
         # raise e
-
+    return status
 
 async def model_save():
     print('model_save')
@@ -241,6 +242,7 @@ async def model_save():
         await notify_fail()
         status.FL_client_fail = False
 
+    return status
 
 # client manager에서 train finish 정보 확인
 async def notify_fin():
@@ -254,7 +256,8 @@ async def notify_fin():
         print('trainFin')
     else:
         print('notify_fin error: ', r.content)
-        
+
+    return status
 
 # client manager에서 train fail 정보 확인
 async def notify_fail():
@@ -269,6 +272,7 @@ async def notify_fail():
     else:
         print('notify_fail error: ', r.content)
 
+    return status
 
 def load_partition():
     # Load the dataset partitions
@@ -303,7 +307,6 @@ def load_partition():
     test_features = np.clip(test_features, -5, 5)
 
     return (train_df, train_labels), (test_df,test_labels), len(label_list) # 환자의 레이블 개수
-
 
 if __name__ == "__main__":
     # wandb login and init
