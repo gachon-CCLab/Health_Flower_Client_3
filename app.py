@@ -1,6 +1,6 @@
 # https://github.com/adap/flower/tree/main/examples/advanced_tensorflow 참조
 
-import os, time
+import os, time, logging
 
 import tensorflow as tf
 
@@ -167,9 +167,9 @@ async def flclientstart(background_tasks: BackgroundTasks, Server_IP: str):
     global status
     global model
     model = build_model()
-    print('bulid model')
+    logging.info('bulid model')
 
-    print('FL start')
+    logging.info('FL start')
     status.FL_client_start = True
     status.FL_server_IP = Server_IP
     background_tasks.add_task(run_client)
@@ -182,7 +182,7 @@ async def run_client():
         # model.load_weights('/model/model.h5')
         pass
     except Exception as e:
-        print('[E][PC0001] learning', e)
+        logging.info('[E][PC0001] learning', e)
         status.FL_client_fail = True
         await notify_fail()
         status.FL_client_fail = False
@@ -191,7 +191,7 @@ async def run_client():
     return status
 
 async def flower_client_start():
-    print('FL learning')
+    logging.info('FL learning')
     global status
     global model
 
@@ -202,17 +202,17 @@ async def flower_client_start():
         loop = asyncio.get_event_loop()
         client = PatientClient(model, x_train, y_train, x_test, y_test)
         assert type(client).get_properties == fl.client.NumPyClient.get_properties
-        print(status.FL_server_IP)
+        logging.info(status.FL_server_IP)
         # fl.client.start_numpy_client(server_address=status.FL_server_IP, client=client)
         request = partial(fl.client.start_numpy_client, server_address=status.FL_server_IP, client=client)
         await loop.run_in_executor(None, request)
         
-        print('fl learning finished')
+        logging.info('fl learning finished')
         await model_save()
         del client
     except Exception as e:
 
-        print('[E][PC0002] learning', e)
+        logging.info('[E][PC0002] learning', e)
         status.FL_client_fail = True
         await notify_fail()
         status.FL_client_fail = False
@@ -220,7 +220,7 @@ async def flower_client_start():
     return status
 
 async def model_save():
-    print('model_save')
+    logging.info('model_save')
     global model
     try:
          # # client_manager 주소
@@ -237,7 +237,7 @@ async def model_save():
         await notify_fin()
         model=None
     except Exception as e:
-        print('[E][PC0003] learning', e)
+        logging.info('[E][PC0003] learning', e)
         status.FL_client_fail = True
         await notify_fail()
         status.FL_client_fail = False
@@ -266,11 +266,11 @@ async def notify_fail():
     loop = asyncio.get_event_loop()
     future1 = loop.run_in_executor(None, requests.get, 'http://localhost:8003/trainFail')
     r = await future1
-    print('try notify_fail')
+    logging.info('try notify_fail')
     if r.status_code == 200:
-        print('trainFin')
+        logging.info('trainFin')
     else:
-        print('notify_fail error: ', r.content)
+        logging.info('notify_fail error: ', r.content)
 
     return status
 
@@ -327,4 +327,4 @@ if __name__ == "__main__":
 
         # FL client out
         requests.get('http://localhost:8003/flclient_out')
-        print('%s client close'%client_num)
+        logging.info('%s client close'%client_num)
