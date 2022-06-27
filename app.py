@@ -29,7 +29,9 @@ import asyncio
 import uvicorn
 from pydantic.main import BaseModel
 
-
+logging.basicConfig(level=logging.DEBUG, format="%(asctime)s [%(levelname)8.8s] %(message)s",
+                    handlers=[logging.StreamHandler()])
+logger = logging.getLogger(__name__)
 
 # Make TensorFlow logs less verbose
 # TF warning log 필터링
