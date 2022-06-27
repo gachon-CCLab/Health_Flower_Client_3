@@ -213,7 +213,9 @@ async def flower_client_start():
         
         logging.info('fl learning finished')
         await model_save()
+        logging.info('model_save')
         del client
+        logging.info('fl client delete')
     except Exception as e:
 
         logging.info('[E][PC0002] learning', e)
@@ -224,7 +226,7 @@ async def flower_client_start():
     return status
 
 async def model_save():
-    logging.info('model_save')
+    
     global model
     try:
          # # client_manager 주소
