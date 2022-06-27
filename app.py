@@ -180,7 +180,9 @@ async def flclientstart(background_tasks: BackgroundTasks, Server_IP: str):
 async def run_client():
     global model
     try:
-        time.sleep(10)
+        logging.info('FL Start')
+        await flower_client_start()
+        # time.sleep(10)
         # model.load_weights('/model/model.h5')
         pass
     except Exception as e:
@@ -188,7 +190,7 @@ async def run_client():
         status.FL_client_fail = True
         await notify_fail()
         status.FL_client_fail = False
-    await flower_client_start()
+    
 
     return status
 
