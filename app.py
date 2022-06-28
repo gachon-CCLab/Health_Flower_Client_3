@@ -185,9 +185,11 @@ async def run_client():
         # time.sleep(10)
         res = requests.get('http://10.152.183.18:8000/FLSe/info')
         latest_gl_model_v = res.json()['Server_Status']['GL_Model_V']
-
-        model.load_weights(f'/model/model_V{latest_gl_model_v}.h5')
-        pass
+        model_list = os.listdir('/model')
+        if f'model_V{latest_gl_model_v}.h5' in model_list:
+            model.load_weights(f'/model/model_V{latest_gl_model_v}.h5')
+        else:
+            pass
     except Exception as e:
         logging.info('[E][PC0001] learning', e)
         status.FL_client_fail = True
