@@ -1,6 +1,6 @@
 # https://github.com/adap/flower/tree/main/examples/advanced_tensorflow 참조
 
-import os, time, logging
+import os, time, logging, json
 
 import tensorflow as tf
 
@@ -219,14 +219,22 @@ async def flower_client_start():
         # fl.client.start_numpy_client(server_address=status.FL_server_IP, client=client)
         await asyncio.sleep(10) # FL-Server 켜질때 까지 잠시 대기
         request = partial(fl.client.start_numpy_client, server_address=status.FL_server_IP, client=client)
-        excute = await loop.run_in_executor(None, request)
+        await loop.run_in_executor(None, request)
         
         await asyncio.sleep(30) # excute 수행 시간동안 잠시 대기
+
+        res = loop.run_in_executor(None, requests.put, 'http://localhost:8003/training', data=json.dumps({'FL_learning_ready': True}))
+
+        if res.status_code ==200:
+            logging.info('fl-client 정상작동 중')
+        else:
+            logging.info('http://localhost:8003/training Requests 오류')
+
         logging.info('fl learning finished')
         await model_save()
         logging.info('model_save')
-        del client, request, excute
-        logging.info('fl client, request, excute delete')
+        del client, request
+        logging.info('fl client, request delete')
     except Exception as e:
 
         logging.info('[E][PC0002] learning', e)
