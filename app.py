@@ -223,10 +223,10 @@ async def flower_client_start():
         
         await asyncio.sleep(30) # excute 수행 시간동안 잠시 대기
 
-        res = loop.run_in_executor(None, requests.put, 'http://localhost:8003/training', data=json.dumps({'FL_learning_ready': True}))
+        res = requests.put('http://localhost:8003/training', data=json.dumps({'FL_learning_complete': True}))
 
         if res.status_code ==200:
-            logging.info('fl-client 정상작동 중')
+            logging.info('fl-client 정상작동 완료')
         else:
             logging.info('http://localhost:8003/training Requests 오류')
 
