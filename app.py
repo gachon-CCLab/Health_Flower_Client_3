@@ -219,7 +219,7 @@ async def flower_client_start():
         request = partial(fl.client.start_numpy_client, server_address=status.FL_server_IP, client=client)
         excute = await loop.run_in_executor(None, request)
         
-        asyncio.sleep(30) # excute 수행 시간동안 잠시 대기
+        await asyncio.sleep(30) # excute 수행 시간동안 잠시 대기
         logging.info('fl learning finished')
         await model_save()
         logging.info('model_save')
