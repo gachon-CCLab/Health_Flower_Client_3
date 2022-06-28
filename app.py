@@ -223,7 +223,10 @@ async def flower_client_start():
         
         await asyncio.sleep(30) # excute 수행 시간동안 잠시 대기
 
-        res = requests.put('http://localhost:8003/training', data=json.dumps({'FL_learning_complete': True}))
+        inform_Payload = {
+            'FL_learning_complete': True
+        }
+        res = requests.put('http://localhost:8003/training', data=json.dumps(inform_Payload))
 
         if res.status_code ==200:
             logging.info('fl-client 정상작동 완료')
@@ -249,7 +252,7 @@ async def model_save():
     global model
     try:
          # # server_status 주소
-        server_st: str = 'http://10.152.183.18:8000/'
+        server_st: str = 'http://10.152.183.18:8000/FLSe'
         client_res = requests.get(server_st+'info')
 
         # # 최신 global model 버전
