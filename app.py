@@ -187,8 +187,9 @@ async def run_client():
         latest_gl_model_v = res.json()['Server_Status']['GL_Model_V']
         model_list = os.listdir('/model')
         if f'model_V{latest_gl_model_v}.h5' in model_list:
-            model.load_weights(f'/model/model_V{latest_gl_model_v}.h5')
+            logging.info('latest model load_weights')
         else:
+            logging.info('NO latest model load_weights')
             pass
     except Exception as e:
         logging.info('[E][PC0001] learning', e)
@@ -216,13 +217,14 @@ async def flower_client_start():
         # fl.client.start_numpy_client(server_address=status.FL_server_IP, client=client)
         await asyncio.sleep(10) # FL-Server 켜질때 까지 잠시 대기
         request = partial(fl.client.start_numpy_client, server_address=status.FL_server_IP, client=client)
-        await loop.run_in_executor(None, request)
+        excute = await loop.run_in_executor(None, request)
         
+        asyncio.sleep(30) # excute 수행 시간동안 잠시 대기
         logging.info('fl learning finished')
         await model_save()
         logging.info('model_save')
-        del client
-        logging.info('fl client delete')
+        del client, request, excute
+        logging.info('fl client, request, excute delete')
     except Exception as e:
 
         logging.info('[E][PC0002] learning', e)
