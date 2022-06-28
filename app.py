@@ -248,12 +248,12 @@ async def model_save():
     
     global model
     try:
-         # # client_manager 주소
-        cl_manager: str = 'http://0.0.0.0:8003/'
-        cl_res = requests.get(cl_manager+'info')
+         # # server_status 주소
+        server_st: str = 'http://10.152.183.18:8000/'
+        client_res = requests.get(server_st+'info')
 
         # # 최신 global model 버전
-        latest_gl_model_v = int(cl_res.json()['GL_Model_V'])
+        latest_gl_model_v = client_res.json()['Server_Status']['GL_Model_V']
         
         # # 다음 global model 버전
         next_gl_model = latest_gl_model_v + 1
