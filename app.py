@@ -180,30 +180,30 @@ async def flclientstart(background_tasks: BackgroundTasks, Server_IP: str):
     return status
 
 # async def run_client():
-    global model
-    try:
-        logging.info('FL Run')
+    # global model
+    # try:
+    #     logging.info('FL Run')
         
-        # time.sleep(10)
-        res = requests.get('http://10.152.183.18:8000/FLSe/info')
-        latest_gl_model_v = res.json()['Server_Status']['GL_Model_V']
-        model_list = os.listdir('/model')
-        if f'model_V{latest_gl_model_v}.h5' in model_list:
-            logging.info('latest model load_weights')
-            model.load_weights(f'/model/model_V{latest_gl_model_v}.h5')
-            # return model
-        else:
-            logging.info('NO latest model load_weights')
-            pass
-    except Exception as e:
-        logging.info('[E][PC0001] learning', e)
-        status.FL_client_fail = True
-        await notify_fail()
-        status.FL_client_fail = False
+    #     # time.sleep(10)
+    #     res = requests.get('http://10.152.183.18:8000/FLSe/info')
+    #     latest_gl_model_v = res.json()['Server_Status']['GL_Model_V']
+    #     model_list = os.listdir('/model')
+    #     if f'model_V{latest_gl_model_v}.h5' in model_list:
+    #         logging.info('latest model load_weights')
+    #         model.load_weights(f'/model/model_V{latest_gl_model_v}.h5')
+    #         # return model
+    #     else:
+    #         logging.info('NO latest model load_weights')
+    #         pass
+    # except Exception as e:
+    #     logging.info('[E][PC0001] learning', e)
+    #     status.FL_client_fail = True
+    #     await notify_fail()
+    #     status.FL_client_fail = False
 
-    await flower_client_start()
+    # await flower_client_start()
 
-    return status
+    # return status
 
 async def flower_client_start():
     logging.info('FL learning')
