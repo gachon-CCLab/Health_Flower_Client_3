@@ -239,9 +239,9 @@ async def flower_client_start():
         del client, request
         logging.info('fl client, request delete')
     except Exception as e:
+        logging.info('[E][PC0002] learning', e)
         status.FL_client_fail = True
         await notify_fail()
-        logging.info('[E][PC0002] learning', e)
         
         status.FL_client_fail = False
         # raise e
