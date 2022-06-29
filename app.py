@@ -217,7 +217,7 @@ async def flower_client_start():
         # assert type(client).get_properties == fl.client.NumPyClient.get_properties
         logging.info(f'fl-server-ip: {status.FL_server_IP}')
         # fl.client.start_numpy_client(server_address=status.FL_server_IP, client=client)
-        await asyncio.sleep(10) # FL-Server 켜질때 까지 잠시 대기
+        await asyncio.sleep(60) # FL-Server 켜질때 까지 잠시 대기
         request = partial(fl.client.start_numpy_client, server_address=status.FL_server_IP, client=client)
         await loop.run_in_executor(None, request)
         
