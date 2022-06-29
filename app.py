@@ -180,7 +180,7 @@ async def flclientstart(background_tasks: BackgroundTasks, Server_IP: str):
 async def run_client():
     global model
     try:
-        logging.info('FL Start')
+        logging.info('FL Run')
         
         # time.sleep(10)
         res = requests.get('http://10.152.183.18:8000/FLSe/info')
@@ -239,10 +239,10 @@ async def flower_client_start():
         del client, request
         logging.info('fl client, request delete')
     except Exception as e:
-
-        logging.info('[E][PC0002] learning', e)
         status.FL_client_fail = True
         await notify_fail()
+        logging.info('[E][PC0002] learning', e)
+        
         status.FL_client_fail = False
         # raise e
     return status
@@ -251,14 +251,13 @@ async def model_save():
     
     global model
     try:
-         # # server_status 주소
-        server_st: str = 'http://10.152.183.18:8000/FLSe/'
-        client_res = requests.get(server_st+'info')
+        # # client_manager 주소
+        client_res = requests.get('http://localhost:8003/info/')
 
         # # 최신 global model 버전
-        latest_gl_model_v = client_res.json()['Server_Status']['GL_Model_V']
+        latest_gl_model_v = client_res.json()['GL_Model_V']
         
-        # # 다음 global model 버전
+        # 다음 global model 버전
         next_gl_model = latest_gl_model_v + 1
 
         model.save('/model/model_V%s.h5'%next_gl_model)
