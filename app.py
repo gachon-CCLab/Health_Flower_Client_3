@@ -296,7 +296,9 @@ async def notify_fail():
         # logging.info('notify_fail try 문장 안 접근')
         loop = asyncio.get_event_loop()
         # logging.info('notify_fail loop 통과')
-        future1 = loop.run_in_executor(None, requests.get, 'http://localhost:8003/trainFail')
+        future1 = requests.get('http://localhost:8003/trainFail')
+
+        # future1 = loop.run_in_executor(None, requests.get, 'http://localhost:8003/trainFail')
         # logging.info('notify_fail future1 통과')
         # r = await future1
         logging.info('notify_fail complete')
