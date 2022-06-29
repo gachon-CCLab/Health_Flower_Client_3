@@ -252,7 +252,7 @@ async def model_save():
     global model
     try:
          # # server_status 주소
-        server_st: str = 'http://10.152.183.18:8000/FLSe'
+        server_st: str = 'http://10.152.183.18:8000/FLSe/'
         client_res = requests.get(server_st+'info')
 
         # # 최신 global model 버전
