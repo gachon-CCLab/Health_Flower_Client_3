@@ -253,17 +253,18 @@ async def model_save():
     
     global model
     try:
-        await notify_fin()
+        
          # # client_manager 주소
         client_res = requests.get('http://localhost:8003/info/')
 
         # # 최신 global model 버전
         latest_gl_model_v = client_res.json()['GL_Model_V']
         
-        # # 다음 global model 버전
-        # next_gl_model = latest_gl_model_v + 1
-
-        model.save('/model/model_V%s.h5'%latest_gl_model_v)
+        # 다음 global model 버전
+        next_gl_model = latest_gl_model_v + 1
+        
+        model.save('/model/model_V%s.h5'%next_gl_model)
+        await notify_fin()
         model=None
     except Exception as e:
         logging.info('[E][PC0003] learning', e)
