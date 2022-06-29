@@ -293,17 +293,17 @@ async def notify_fail():
     global status
     status.FL_client_start = False
     try:
-        logging.info('notify_fail try 문장 안 접근')
+        # logging.info('notify_fail try 문장 안 접근')
         loop = asyncio.get_event_loop()
-        logging.info('notify_fail loop 통과')
+        # logging.info('notify_fail loop 통과')
         future1 = loop.run_in_executor(None, requests.get, 'http://localhost:8003/trainFail')
-        logging.info('notify_fail future1 통과')
-        r = await future1
+        # logging.info('notify_fail future1 통과')
+        # r = await future1
         logging.info('notify_fail complete')
-        if r.status_code == 200:
+        if future1.status_code == 200:
             logging.info('trainFin')
         else:
-            logging.info('notify_fail error: ', r.content)
+            logging.info('notify_fail error: ', future1.content)
     except Exception as e:
         logging.info('[E] notify_fail: ', e)
         
