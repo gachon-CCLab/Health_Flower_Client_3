@@ -216,7 +216,7 @@ async def flower_client_start():
         client = PatientClient(model, x_train, y_train, x_test, y_test)
         # assert type(client).get_properties == fl.client.NumPyClient.get_properties
         logging.info(f'fl-server-ip: {status.FL_server_IP}')
-        fl.client.start_numpy_client(server_address=status.FL_server_IP, client=client)
+        excute = fl.client.start_numpy_client(server_address=status.FL_server_IP, client=client)
         # await asyncio.sleep(60) # FL-Server 켜질때 까지 잠시 대기
         # request = partial(fl.client.start_numpy_client, server_address=status.FL_server_IP, client=client)
         # await loop.run_in_executor(None, request)
@@ -233,8 +233,8 @@ async def flower_client_start():
         logging.info('fl learning finished')
         await model_save()
         logging.info('model_save')
-        del client, request
-        logging.info('fl client, request delete')
+        del client, excute
+        logging.info('fl client, excute delete')
     except Exception as e:
         await notify_fail()
         logging.error('[E][PC0002] error')
