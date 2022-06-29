@@ -181,7 +181,7 @@ async def run_client():
     global model
     try:
         logging.info('FL Start')
-        
+        await asyncio.sleep(10)
         # time.sleep(10)
         res = requests.get('http://10.152.183.18:8000/FLSe/info')
         latest_gl_model_v = res.json()['Server_Status']['GL_Model_V']
@@ -194,9 +194,9 @@ async def run_client():
             logging.info('NO latest model load_weights')
             pass
     except Exception as e:
-        logging.info('[E][PC0001] learning', e)
         status.FL_client_fail = True
         await notify_fail()
+        logging.info('[E][PC0001] learning', e)
         status.FL_client_fail = False
 
     await flower_client_start()
@@ -212,14 +212,14 @@ async def flower_client_start():
     (x_train, y_train), (x_test, y_test), label_count = load_partition()
 
     try:
-        loop = asyncio.get_event_loop()
+        # loop = asyncio.get_event_loop()
         client = PatientClient(model, x_train, y_train, x_test, y_test)
         # assert type(client).get_properties == fl.client.NumPyClient.get_properties
         logging.info(f'fl-server-ip: {status.FL_server_IP}')
-        # fl.client.start_numpy_client(server_address=status.FL_server_IP, client=client)
-        await asyncio.sleep(60) # FL-Server 켜질때 까지 잠시 대기
-        request = partial(fl.client.start_numpy_client, server_address=status.FL_server_IP, client=client)
-        await loop.run_in_executor(None, request)
+        fl.client.start_numpy_client(server_address=status.FL_server_IP, client=client)
+        # await asyncio.sleep(60) # FL-Server 켜질때 까지 잠시 대기
+        # request = partial(fl.client.start_numpy_client, server_address=status.FL_server_IP, client=client)
+        # await loop.run_in_executor(None, request)
         
         await asyncio.sleep(30) # excute 수행 시간동안 잠시 대기
 
@@ -236,11 +236,13 @@ async def flower_client_start():
         del client, request
         logging.info('fl client, request delete')
     except Exception as e:
-
-        logging.info('[E][PC0002] learning', e)
-        status.FL_client_fail = True
         await notify_fail()
+        logging.error('[E][PC0002] error')
+
+        logging.error('[E][PC0002] learning', e)
+        status.FL_client_fail = True
         status.FL_client_fail = False
+        
         # raise e
     return status
 
@@ -267,7 +269,7 @@ async def model_save():
         await notify_fail()
         status.FL_client_fail = False
 
-    return status
+    return status, model
 
 # client manager에서 train finish 정보 확인
 async def notify_fin():
