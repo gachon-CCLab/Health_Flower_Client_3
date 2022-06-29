@@ -238,6 +238,8 @@ async def flower_client_start():
         logging.info('model_save')
         del client, request
         logging.info('fl client, request delete')
+        loop.close()
+        logging.info('fl client start loop 종료')
     except Exception as e:
         await notify_fail()
         logging.info('[E][PC0002] learning', e)
@@ -284,7 +286,8 @@ async def notify_fin():
         print('trainFin')
     else:
         print('notify_fin error: ', r.content)
-
+    loop.close()
+    logging.info('fl client notify_fin loop 종료')
     return status
 
 # client manager에서 train fail 정보 확인
