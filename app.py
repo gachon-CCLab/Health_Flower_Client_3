@@ -189,7 +189,7 @@ async def run_client():
         if f'model_V{latest_gl_model_v}.h5' in model_list:
             logging.info('latest model load_weights')
             model.load_weights(f'/model/model_V{latest_gl_model_v}.h5')
-            return model
+            # return model
         else:
             logging.info('NO latest model load_weights')
             pass
