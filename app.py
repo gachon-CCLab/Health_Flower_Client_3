@@ -258,9 +258,9 @@ async def model_save():
         latest_gl_model_v = client_res.json()['Server_Status']['GL_Model_V']
         
         # # 다음 global model 버전
-        next_gl_model = latest_gl_model_v + 1
+        # next_gl_model = latest_gl_model_v + 1
 
-        model.save('/model/model_V%s.h5'%next_gl_model)
+        model.save('/model/model_V%s.h5'%latest_gl_model_v)
         await notify_fin()
         model=None
     except Exception as e:
