@@ -174,34 +174,33 @@ async def flclientstart(background_tasks: BackgroundTasks, Server_IP: str):
     logging.info('FL start')
     status.FL_client_start = True
     status.FL_server_IP = Server_IP
-    # background_tasks.add_task(run_client)
-    background_tasks.add_task(flower_client_start)
+    background_tasks.add_task(run_client)
 
     return status
 
-# async def run_client():
-    # global model
-    # try:
-    #     logging.info('FL Run')
+async def run_client():
+    global model
+    try:
+        logging.info('FL Run')
         
-    #     # time.sleep(10)
-    #     res = requests.get('http://10.152.183.18:8000/FLSe/info')
-    #     latest_gl_model_v = res.json()['Server_Status']['GL_Model_V']
-    #     model_list = os.listdir('/model')
-    #     if f'model_V{latest_gl_model_v}.h5' in model_list:
-    #         logging.info('latest model load_weights')
-    #         model.load_weights(f'/model/model_V{latest_gl_model_v}.h5')
-    #         # return model
-    #     else:
-    #         logging.info('NO latest model load_weights')
-    #         pass
-    # except Exception as e:
-    #     logging.info('[E][PC0001] learning', e)
-    #     status.FL_client_fail = True
-    #     await notify_fail()
-    #     status.FL_client_fail = False
+        # time.sleep(10)
+        res = requests.get('http://10.152.183.18:8000/FLSe/info')
+        latest_gl_model_v = res.json()['Server_Status']['GL_Model_V']
+        model_list = os.listdir('/model')
+        if f'model_V{latest_gl_model_v}.h5' in model_list:
+            logging.info('latest model load_weights')
+            model.load_weights(f'/model/model_V{latest_gl_model_v}.h5')
+            # return model
+        else:
+            logging.info('NO latest model load_weights')
+            pass
+    except Exception as e:
+        logging.info('[E][PC0001] learning', e)
+        status.FL_client_fail = True
+        await notify_fail()
+        status.FL_client_fail = False
 
-    # await flower_client_start()
+    await flower_client_start()
 
     # return status
 
@@ -222,28 +221,12 @@ async def flower_client_start():
         # await asyncio.sleep(20) # FL-Server 켜질때 까지 잠시 대기
         request = partial(fl.client.start_numpy_client, server_address=status.FL_server_IP, client=client)
         await loop.run_in_executor(None, request)
-        
-        # await asyncio.sleep(30) # excute 수행 시간동안 잠시 대기
-
-        # inform_Payload = {
-        #     'FL_learning_complete': True
-        # }
-        # res = requests.put('http://localhost:8003/training', data=json.dumps(inform_Payload))
-
-        # if res.status_code ==200:
-        #     logging.info('fl-client 정상작동 완료')
-        # else:
-        #     logging.info('http://localhost:8003/training Requests 오류')
 
         logging.info('fl learning finished')
         await model_save()
         logging.info('model_save')
         del client, request
-        # logging.info('fl client, request delete')
-        # loop.stop()
-        # logging.info('fl client start loop 중지')
-        # loop.close()
-        # logging.info('fl client start loop 종료')
+
     except Exception as e:
         logging.info('[E][PC0002] learning', e)
         status.FL_client_fail = True
@@ -297,13 +280,10 @@ async def notify_fail():
     status.FL_client_start = False
     # logging.info('notify_fail try 문장 안 접근')
     loop = asyncio.get_event_loop()
-    # logging.info('notify_fail loop 통과')
-    # future1 = requests.get('http://localhost:8003/trainFail')
-
     future1 = loop.run_in_executor(None, requests.get, 'http://localhost:8003/trainFail')
-    logging.info('notify_fail future1 통과')
+    # logging.info('notify_fail future1 통과')
     r = await future1
-    logging.info('notify_fail complete')
+    # logging.info('notify_fail complete')
     if r.status_code == 200:
         logging.info('trainFin')
     else:
@@ -353,9 +333,6 @@ if __name__ == "__main__":
     try:
         # client api 생성 => client manager와 통신하기 위함
         uvicorn.run("app:app", host='0.0.0.0', port=8002, reload=True)
-
-        # client FL 수행
-        # main()
         
     finally:
 
