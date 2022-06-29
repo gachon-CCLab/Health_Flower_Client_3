@@ -214,7 +214,7 @@ async def flower_client_start():
     (x_train, y_train), (x_test, y_test), label_count = load_partition()
 
     try:
-        await asyncio.sleep(10) # FL-Server 켜질때 까지 잠시 대기
+        # await asyncio.sleep(10) # FL-Server 켜질때 까지 잠시 대기
 
         loop = asyncio.get_event_loop()
         client = PatientClient(model, x_train, y_train, x_test, y_test)
@@ -236,7 +236,7 @@ async def flower_client_start():
         logging.info('fl learning finished')
         await model_save()
         logging.info('model_save')
-        del client, excute
+        del client
         logging.info('fl client delete')
     except Exception as e:
         await notify_fail()
@@ -253,18 +253,17 @@ async def model_save():
     
     global model
     try:
-         # # server_status 주소
-        server_st: str = 'http://10.152.183.18:8000/FLSe/'
-        client_res = requests.get(server_st+'info')
+        await notify_fin()
+         # # client_manager 주소
+        client_res = requests.get('http://localhost:8003/info/')
 
         # # 최신 global model 버전
-        latest_gl_model_v = client_res.json()['Server_Status']['GL_Model_V']
+        latest_gl_model_v = client_res.json()['GL_Model_V']
         
         # # 다음 global model 버전
         # next_gl_model = latest_gl_model_v + 1
 
         model.save('/model/model_V%s.h5'%latest_gl_model_v)
-        await notify_fin()
         model=None
     except Exception as e:
         logging.info('[E][PC0003] learning', e)
