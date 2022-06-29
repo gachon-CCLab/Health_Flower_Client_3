@@ -38,7 +38,7 @@ logger = logging.getLogger(__name__)
 os.environ["TF_CPP_MIN_LOG_LEVEL"] = "3"
 
 global client_num
-client_num = 3 # client 번호
+client_num = 1 # client 번호
 
 # FL client 상태 확인
 app = FastAPI()
@@ -180,8 +180,8 @@ async def flclientstart(background_tasks: BackgroundTasks, Server_IP: str):
 async def run_client():
     global model
     try:
-        logging.info('FL Run')
-        await asyncio.sleep(10)
+        logging.info('FL Start')
+        
         # time.sleep(10)
         res = requests.get('http://10.152.183.18:8000/FLSe/info')
         latest_gl_model_v = res.json()['Server_Status']['GL_Model_V']
@@ -189,21 +189,19 @@ async def run_client():
         if f'model_V{latest_gl_model_v}.h5' in model_list:
             logging.info('latest model load_weights')
             model.load_weights(f'/model/model_V{latest_gl_model_v}.h5')
-            pass
-            # await flower_client_start()
-            
+            return model
         else:
             logging.info('NO latest model load_weights')
             pass
     except Exception as e:
+        logging.info('[E][PC0001] learning', e)
         status.FL_client_fail = True
         await notify_fail()
-        logging.info('[E][PC0001] learning', e)
         status.FL_client_fail = False
 
-    finally:
-        await flower_client_start()
-        return status
+    await flower_client_start()
+
+    return status
 
 async def flower_client_start():
     logging.info('FL learning')
@@ -214,19 +212,21 @@ async def flower_client_start():
     (x_train, y_train), (x_test, y_test), label_count = load_partition()
 
     try:
-        # await asyncio.sleep(10) # FL-Server 켜질때 까지 잠시 대기
-
         loop = asyncio.get_event_loop()
         client = PatientClient(model, x_train, y_train, x_test, y_test)
         # assert type(client).get_properties == fl.client.NumPyClient.get_properties
         logging.info(f'fl-server-ip: {status.FL_server_IP}')
-        # excute = fl.client.start_numpy_client(server_address=status.FL_server_IP, client=client)
+        # fl.client.start_numpy_client(server_address=status.FL_server_IP, client=client)
+        await asyncio.sleep(10) # FL-Server 켜질때 까지 잠시 대기
         request = partial(fl.client.start_numpy_client, server_address=status.FL_server_IP, client=client)
         await loop.run_in_executor(None, request)
         
-        # await asyncio.sleep(10) # excute 수행 시간동안 잠시 대기
+        await asyncio.sleep(30) # excute 수행 시간동안 잠시 대기
 
-        # res = requests.put('http://localhost:8003/training', params={'FL_learning_complete': 'True'})
+        # inform_Payload = {
+        #     'FL_learning_complete': True
+        # }
+        # res = requests.put('http://localhost:8003/training', data=json.dumps(inform_Payload))
 
         # if res.status_code ==200:
         #     logging.info('fl-client 정상작동 완료')
@@ -236,16 +236,14 @@ async def flower_client_start():
         logging.info('fl learning finished')
         await model_save()
         logging.info('model_save')
-        del client
-        logging.info('fl client delete')
+        del client, request
+        logging.info('fl client, request delete')
     except Exception as e:
-        await notify_fail()
-        logging.error('[E][PC0002] error')
 
-        logging.error('[E][PC0002] learning', e)
+        logging.info('[E][PC0002] learning', e)
         status.FL_client_fail = True
+        await notify_fail()
         status.FL_client_fail = False
-        
         # raise e
     return status
 
@@ -253,16 +251,16 @@ async def model_save():
     
     global model
     try:
-        
-         # # client_manager 주소
-        client_res = requests.get('http://localhost:8003/info/')
+         # # server_status 주소
+        server_st: str = 'http://10.152.183.18:8000/FLSe/'
+        client_res = requests.get(server_st+'info')
 
         # # 최신 global model 버전
-        latest_gl_model_v = client_res.json()['GL_Model_V']
+        latest_gl_model_v = client_res.json()['Server_Status']['GL_Model_V']
         
-        # 다음 global model 버전
+        # # 다음 global model 버전
         next_gl_model = latest_gl_model_v + 1
-        
+
         model.save('/model/model_V%s.h5'%next_gl_model)
         await notify_fin()
         model=None
@@ -272,7 +270,7 @@ async def model_save():
         await notify_fail()
         status.FL_client_fail = False
 
-    return status, model
+    return status
 
 # client manager에서 train finish 정보 확인
 async def notify_fin():
