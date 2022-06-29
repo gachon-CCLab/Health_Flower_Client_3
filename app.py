@@ -239,11 +239,12 @@ async def flower_client_start():
         del client, request
         logging.info('fl client, request delete')
     except Exception as e:
-        logging.info('[E][PC0002] learning', e)
-        status.FL_client_fail = True
         await notify_fail()
+        logging.info('[E][PC0002] learning', e)
+        # status.FL_client_fail = True
+        # # await notify_fail()
         
-        status.FL_client_fail = False
+        # status.FL_client_fail = False
         # raise e
     return status
 
@@ -288,17 +289,21 @@ async def notify_fin():
 
 # client manager에서 train fail 정보 확인
 async def notify_fail():
+    logging.info('notify_fail start')
     global status
     status.FL_client_start = False
-    loop = asyncio.get_event_loop()
-    future1 = loop.run_in_executor(None, requests.get, 'http://localhost:8003/trainFail')
-    r = await future1
-    logging.info('try notify_fail')
-    if r.status_code == 200:
-        logging.info('trainFin')
-    else:
-        logging.info('notify_fail error: ', r.content)
-
+    try:
+        loop = asyncio.get_event_loop()
+        future1 = loop.run_in_executor(None, requests.get, 'http://localhost:8003/trainFail')
+        r = await future1
+        logging.info('notify_fail complete')
+        if r.status_code == 200:
+            logging.info('trainFin')
+        else:
+            logging.info('notify_fail error: ', r.content)
+    except Exception as e:
+        logging.info('[E] notify_fail: ', e)
+        
     return status
 
 def load_partition():
