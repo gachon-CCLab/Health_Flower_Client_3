@@ -217,7 +217,7 @@ async def flower_client_start():
         # assert type(client).get_properties == fl.client.NumPyClient.get_properties
         logging.info(f'fl-server-ip: {status.FL_server_IP}')
         # fl.client.start_numpy_client(server_address=status.FL_server_IP, client=client)
-        await asyncio.sleep(10) # FL-Server 켜질때 까지 잠시 대기
+        await asyncio.sleep(20) # FL-Server 켜질때 까지 잠시 대기
         request = partial(fl.client.start_numpy_client, server_address=status.FL_server_IP, client=client)
         await loop.run_in_executor(None, request)
         
@@ -238,6 +238,8 @@ async def flower_client_start():
         logging.info('model_save')
         del client, request
         logging.info('fl client, request delete')
+        loop.stop()
+        logging.info('fl client start loop 중지')
         loop.close()
         logging.info('fl client start loop 종료')
     except Exception as e:
@@ -284,10 +286,12 @@ async def notify_fin():
     print('try notify_fin')
     if r.status_code == 200:
         print('trainFin')
+        loop.stop()
+        logging.info('fl client notify_fin loop 중지')
+        loop.close()
+        logging.info('fl client notify_fin loop 종료')
     else:
         print('notify_fin error: ', r.content)
-    loop.close()
-    logging.info('fl client notify_fin loop 종료')
     return status
 
 # client manager에서 train fail 정보 확인
@@ -295,23 +299,24 @@ async def notify_fail():
     logging.info('notify_fail start')
     global status
     status.FL_client_start = False
-    try:
-        # logging.info('notify_fail try 문장 안 접근')
-        loop = asyncio.get_event_loop()
-        # logging.info('notify_fail loop 통과')
-        future1 = requests.get('http://localhost:8003/trainFail')
+    # logging.info('notify_fail try 문장 안 접근')
+    loop = asyncio.get_event_loop()
+    # logging.info('notify_fail loop 통과')
+    # future1 = requests.get('http://localhost:8003/trainFail')
 
-        # future1 = loop.run_in_executor(None, requests.get, 'http://localhost:8003/trainFail')
-        # logging.info('notify_fail future1 통과')
-        # r = await future1
-        logging.info('notify_fail complete')
-        if future1.status_code == 200:
-            logging.info('trainFin')
-        else:
-            logging.info('notify_fail error: ', future1.content)
-    except Exception as e:
-        logging.info('[E] notify_fail: ', e)
-        
+    future1 = loop.run_in_executor(None, requests.get, 'http://localhost:8003/trainFail')
+    logging.info('notify_fail future1 통과')
+    r = await future1
+    logging.info('notify_fail complete')
+    if r.status_code == 200:
+        logging.info('trainFin')
+        loop.stop()
+        logging.info('fl client notify_fail loop 중지')
+        loop.close()
+        logging.info('fl client notify_fail loop 종료')
+    else:
+        logging.info('notify_fail error: ', r.content)
+    
     return status
 
 def load_partition():
