@@ -38,7 +38,7 @@ logger = logging.getLogger(__name__)
 os.environ["TF_CPP_MIN_LOG_LEVEL"] = "3"
 
 global client_num
-client_num = 1 # client 번호
+client_num = 3 # client 번호
 
 # FL client 상태 확인
 app = FastAPI()
@@ -64,6 +64,11 @@ class PatientClient(fl.client.NumPyClient):
     def get_parameters(self):
         """Get parameters of the local model."""
         raise Exception("Not implemented (server-side parameter initialization)")
+
+    def get_properties(self, config):
+        status = fl.common.Status(code=fl.common.Code.OK, message="Success")
+        properties = {"mse": 0.5} # super().get_properties({"mse": 0.5})
+        return fl.common.PropertiesRes(status, properties)
 
     def fit(self, parameters, config):
         """Train parameters on the locally held training set."""
@@ -174,33 +179,34 @@ async def flclientstart(background_tasks: BackgroundTasks, Server_IP: str):
     logging.info('FL start')
     status.FL_client_start = True
     status.FL_server_IP = Server_IP
-    background_tasks.add_task(run_client)
+    # background_tasks.add_task(run_client)
+    background_tasks.add_task(flower_client_start)
 
     return status
 
-async def run_client():
-    global model
-    try:
-        logging.info('FL Run')
+# async def run_client():
+#     global model
+#     try:
+#         logging.info('FL Run')
         
-        # time.sleep(10)
-        res = requests.get('http://10.152.183.18:8000/FLSe/info')
-        latest_gl_model_v = res.json()['Server_Status']['GL_Model_V']
-        model_list = os.listdir('/model')
-        if f'model_V{latest_gl_model_v}.h5' in model_list:
-            logging.info('latest model load_weights')
-            model.load_weights(f'/model/model_V{latest_gl_model_v}.h5')
-            # return model
-        else:
-            logging.info('NO latest model load_weights')
-            pass
-    except Exception as e:
-        logging.info('[E][PC0001] learning', e)
-        status.FL_client_fail = True
-        await notify_fail()
-        status.FL_client_fail = False
+#         # time.sleep(10)
+#         res = requests.get('http://10.152.183.18:8000/FLSe/info')
+#         latest_gl_model_v = res.json()['Server_Status']['GL_Model_V']
+#         model_list = os.listdir('/model')
+#         if f'model_V{latest_gl_model_v}.h5' in model_list:
+#             logging.info('latest model load_weights')
+#             model.load_weights(f'/model/model_V{latest_gl_model_v}.h5')
+#             # return model
+#         else:
+#             logging.info('NO latest model load_weights')
+#             pass
+#     except Exception as e:
+#         logging.info('[E][PC0001] learning', e)
+#         status.FL_client_fail = True
+#         await notify_fail()
+#         status.FL_client_fail = False
 
-    await flower_client_start()
+#     await flower_client_start()
 
     # return status
 
