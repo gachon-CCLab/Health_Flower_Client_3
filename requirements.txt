@@ -13,3 +13,4 @@ wandb
 numpy
 sklearn
 pyarrow
+tensorflow_addons
