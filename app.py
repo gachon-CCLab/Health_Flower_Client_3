@@ -61,6 +61,7 @@ auc = 0
 f1_score = 0
 
 next_gl_model= 0 # 글로벌 모델 버전
+y_train = []
 
 # Define Flower client
 class PatientClient(fl.client.NumPyClient):
