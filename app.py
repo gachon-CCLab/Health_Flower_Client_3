@@ -52,6 +52,15 @@ class FLclient_status(BaseModel):
 
 status = FLclient_status()
 
+loss = 0
+accuracy = 0
+precision = 0
+recall = 0
+auc = 0
+f1_score = 0
+
+next_gl_model= 0 # 글로벌 모델 버전
+
 # Define Flower client
 class PatientClient(fl.client.NumPyClient):
     global client_num
@@ -72,6 +81,8 @@ class PatientClient(fl.client.NumPyClient):
 
     def fit(self, parameters, config):
         """Train parameters on the locally held training set."""
+
+        global loss, accuracy, precision, recall, auc, f1_score
 
         # Update local model parameters
         self.model.set_weights(parameters)
@@ -104,12 +115,12 @@ class PatientClient(fl.client.NumPyClient):
         }
 
         # 매 round 마다 성능지표 확인을 위한 log
-        # loss = history.history["loss"][0]
-        # accuracy = history.history["accuracy"][0]
-        # precision = history.history["precision"][0]
-        # recall = history.history["recall"][0]
-        # auc = history.history["auc"][0]
-        # f1_score = history.history["f1_score"][0]
+        loss = history.history["loss"][0]
+        accuracy = history.history["accuracy"][0]
+        precision = history.history["precision"][0]
+        recall = history.history["recall"][0]
+        auc = history.history["auc"][0]
+        f1_score = history.history["f1_score"][0]
 
         # print(history.history)
 
@@ -243,7 +254,7 @@ async def flower_client_start():
 
 async def model_save():
     
-    global model
+    global model, next_gl_model
     try:
         # # client_manager 주소
         client_res = requests.get('http://localhost:8003/info/')
@@ -269,6 +280,14 @@ async def model_save():
 async def notify_fin():
     global status
     status.FL_client_start = False
+    logging.info(f'result - loss: {loss}')
+    logging.info(f'result - accuracy: {accuracy}')
+    logging.info(f'result - precision: {precision}')
+    logging.info(f'result - recall: {recall}')
+    logging.info(f'result - auc: {auc}')
+    logging.info(f'result - f1_score: {f1_score}')
+    logging.info(f'result - next_gl_model_V: {next_gl_model}')
+
     loop = asyncio.get_event_loop()
     future2 = loop.run_in_executor(None, requests.get, 'http://localhost:8003/trainFin')
     r = await future2
