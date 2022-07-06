@@ -84,7 +84,7 @@ class PatientClient(fl.client.NumPyClient):
     def fit(self, parameters, config):
         """Train parameters on the locally held training set."""
 
-        global loss, accuracy, precision, recall, auc, f1_score
+        global loss, accuracy, precision, recall, auc, f1_score, auprc
 
         # Update local model parameters
         self.model.set_weights(parameters)
@@ -122,6 +122,7 @@ class PatientClient(fl.client.NumPyClient):
         precision = history.history["precision"][0]
         recall = history.history["recall"][0]
         auc = history.history["auc"][0]
+        auprc = history.history["auprc"][0]
         f1_score = history.history["f1_score"][0]
 
         # print(history.history)
@@ -141,10 +142,10 @@ class PatientClient(fl.client.NumPyClient):
         steps: int = config["val_steps"]
 
         # Evaluate global model parameters on the local test data and return results
-        loss, accuracy, precision, recall, auc = self.model.evaluate(self.x_test, self.y_test, 32, steps=steps)
+        loss, accuracy, precision, recall, auc, auprc, f1_score = self.model.evaluate(self.x_test, self.y_test, 32, steps=steps)
         num_examples_test = len(self.x_test)
         
-        return loss, num_examples_test, {"accuracy": accuracy, "precision": precision, "recall": recall, "auc": auc}
+        return loss, num_examples_test, {"accuracy": accuracy, "precision": precision, "recall": recall, "auc": auc,"auprc": auprc, "f1_score": f1_score}
         # return loss, num_examples_test, {"accuracy": accuracy, "precision": precision, "recall": recall, "auc": auc, 'f1_score': f1_score, 'auprc': auprc}
 
 def build_model():
@@ -157,8 +158,8 @@ def build_model():
         tf.keras.metrics.Precision(name='precision'),
         tf.keras.metrics.Recall(name='recall'),
         tf.keras.metrics.AUC(name='auc'),
-        tfa.metrics.F1Score(name='f1_score', num_classes=len(y_train[0]), average='micro'),
         tf.keras.metrics.AUC(name='auprc', curve='PR'), # precision-recall curve
+        tfa.metrics.F1Score(name='f1_score', num_classes=len(y_train[0]), average='micro'),
     ]
 
     model = tf.keras.Sequential([
@@ -289,6 +290,7 @@ async def notify_fin():
     logging.info(f'result - precision: {precision}')
     logging.info(f'result - recall: {recall}')
     logging.info(f'result - auc: {auc}')
+    logging.info(f'result - auprc: {auprc}')
     logging.info(f'result - f1_score: {f1_score}')
     logging.info(f'result - next_gl_model_V: {next_gl_model}')
 
