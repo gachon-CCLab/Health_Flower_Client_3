@@ -3,6 +3,7 @@
 import os, time, logging, json
 
 import tensorflow as tf
+import tensorflow_addons as tfa
 
 import flwr as fl
 
@@ -146,6 +147,8 @@ class PatientClient(fl.client.NumPyClient):
         # return loss, num_examples_test, {"accuracy": accuracy, "precision": precision, "recall": recall, "auc": auc, 'f1_score': f1_score, 'auprc': auprc}
 
 def build_model():
+    global y_train
+
     # Load and compile Keras model
     # 모델 및 메트릭 정의
     METRICS = [
@@ -153,7 +156,7 @@ def build_model():
         tf.keras.metrics.Precision(name='precision'),
         tf.keras.metrics.Recall(name='recall'),
         tf.keras.metrics.AUC(name='auc'),
-        # tfa.metrics.F1Score(name='f1_score', num_classes=5),
+        tfa.metrics.F1Score(name='f1_score', num_classes=len(y_train[0]), average='micro'),
         tf.keras.metrics.AUC(name='auprc', curve='PR'), # precision-recall curve
     ]
 
@@ -224,7 +227,7 @@ async def flclientstart(background_tasks: BackgroundTasks, Server_IP: str):
 async def flower_client_start():
     logging.info('FL learning')
     global status
-    global model
+    global model, y_train
 
     # 환자별로 partition 분리 => 개별 클라이언트 적용
     (x_train, y_train), (x_test, y_test), label_count = load_partition()
