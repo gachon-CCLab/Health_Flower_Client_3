@@ -59,6 +59,7 @@ precision = 0
 recall = 0
 auc = 0
 f1_score = 0
+auprc=0
 
 next_gl_model= 0 # 글로벌 모델 버전
 
@@ -282,7 +283,7 @@ async def model_save():
 
 # client manager에서 train finish 정보 확인
 async def notify_fin():
-    global status
+    global status, loss, accuracy, precision, recall, auc, auprc, f1_score, next_gl_model
     status.FL_client_start = False
     logging.info(f'result - loss: {loss}')
     logging.info(f'result - accuracy: {accuracy}')
