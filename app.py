@@ -61,7 +61,6 @@ auc = 0
 f1_score = 0
 
 next_gl_model= 0 # 글로벌 모델 버전
-y_train = []
 
 # Define Flower client
 class PatientClient(fl.client.NumPyClient):
@@ -159,7 +158,7 @@ def build_model():
         tf.keras.metrics.Recall(name='recall'),
         tf.keras.metrics.AUC(name='auc'),
         tf.keras.metrics.AUC(name='auprc', curve='PR'), # precision-recall curve
-        tfa.metrics.F1Score(name='f1_score', num_classes=len(y_train[0]), average='micro'),
+        tfa.metrics.F1Score(name='f1_score', num_classes=5, average='micro'),
     ]
 
     model = tf.keras.Sequential([
@@ -229,7 +228,7 @@ async def flclientstart(background_tasks: BackgroundTasks, Server_IP: str):
 async def flower_client_start():
     logging.info('FL learning')
     global status
-    global model, y_train
+    global model
 
     # 환자별로 partition 분리 => 개별 클라이언트 적용
     (x_train, y_train), (x_test, y_test), label_count = load_partition()
