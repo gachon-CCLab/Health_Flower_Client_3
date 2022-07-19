@@ -32,17 +32,26 @@ from pydantic.main import BaseModel
 from kubernetes import client, config
 from kubernetes.stream import stream
 
-# create an instance of the API class
+config = client.Configuration()
 
-config.load_kube_config()
-api_client = client.CoreV1Api()
+config.api_key['authorization'] = open('/var/run/secrets/kubernetes.io/serviceaccount/token').read()
+config.api_key_prefix['authorization'] = 'Bearer'
+config.host = 'https://kubernetes.default'
+config.ssl_ca_cert = '/var/run/secrets/kubernetes.io/serviceaccount/ca.crt'
+config.verify_ssl=True
+
+# api_client는 "2. 연결 정보 설정하기" 항목을 참고한다
+api_client = client.CoreV1Api(client.ApiClient(config))
 
 # 첫 번째 argument에 당신이 사용하는 namespace를 입력한다
-ret = api_client.list_namespaced_pod("fed-repl-mjh", watch=False)
+ret = api_client.list_namespaced_pod("namespace 입력", watch=False)
+
+print("Listing pods with their IPs:")
 
 for i in ret.items:
     print(f"{i.status.pod_ip}\t{i.metadata.name}")
 
+# create an instance of the API class
 logging.basicConfig(level=logging.DEBUG, format="%(asctime)s [%(levelname)8.8s] %(message)s",
                     handlers=[logging.StreamHandler()])
 logger = logging.getLogger(__name__)
