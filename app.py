@@ -29,6 +29,19 @@ from fastapi import FastAPI, BackgroundTasks
 import asyncio
 import uvicorn
 from pydantic.main import BaseModel
+from kubernetes import client, config
+from kubernetes.stream import stream
+
+# create an instance of the API class
+
+config.load_kube_config()
+api_client = client.CoreV1Api()
+
+# 첫 번째 argument에 당신이 사용하는 namespace를 입력한다
+ret = api_client.list_namespaced_pod("fed-repl-mjh", watch=False)
+
+for i in ret.items:
+    print(f"{i.status.pod_ip}\t{i.metadata.name}")
 
 logging.basicConfig(level=logging.DEBUG, format="%(asctime)s [%(levelname)8.8s] %(message)s",
                     handlers=[logging.StreamHandler()])
