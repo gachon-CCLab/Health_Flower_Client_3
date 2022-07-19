@@ -39,11 +39,10 @@ logger = logging.getLogger(__name__)
 # TF warning log 필터링
 os.environ["TF_CPP_MIN_LOG_LEVEL"] = "3"
 pod_name = os.environ['MY_POD_ID'].split('-')
-print('pod_name: ',pod_name)
 
 
 global client_num
-client_num = pod_name[3] # client 번호
+client_num = int(pod_name[3]) # client 번호
 print('client_num: ', client_num)
 
 # FL client 상태 확인
