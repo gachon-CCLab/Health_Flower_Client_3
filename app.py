@@ -38,7 +38,7 @@ logger = logging.getLogger(__name__)
 # Make TensorFlow logs less verbose
 # TF warning log 필터링
 os.environ["TF_CPP_MIN_LOG_LEVEL"] = "3"
-pod_name = os.environ['MY_POD_ID'].split('/')
+pod_name = os.environ['MY_POD_ID'].split('-')
 print('pod_name: ',pod_name)
 
 
