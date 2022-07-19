@@ -14,3 +14,4 @@ numpy
 sklearn
 pyarrow
 tensorflow_addons
+kubernetes
